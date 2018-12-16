@@ -16,7 +16,9 @@ class Model {
     this.revokeAuthorizationCode = this.revokeAuthorizationCode;
     this.revokeToken = this.revokeToken;
     this.saveToken = this.saveToken;
-    this.saveAuthorizationCode = this.saveAuthorizationCode
+    this.saveAuthorizationCode = this.saveAuthorizationCode;
+    this.verifyScope = this.verifyScope;
+    this.validateScope = this.validateScope;
   }
 
   async getRefreshToken(refreshToken) {
