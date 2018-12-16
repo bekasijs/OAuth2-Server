@@ -1,0 +1,35 @@
+{
+  "name": "auth-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "acl": "^0.4.11",
+    "body-parser": "^1.18.3",
+    "config": "^3.0.0",
+    "cors": "^2.8.5",
+    "debug": "^4.1.0",
+    "dotenv": "^6.1.0",
+    "express": "^4.16.4",
+    "helmet": "^3.15.0",
+    "jsonwebtoken": "^8.4.0",
+    "lodash": "^4.17.11",
+    "moment-timezone": "^0.5.23",
+    "mongoose": "^5.3.14",
+    "oauth2-server": "^3.0.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "pug": "^2.0.3",
+    "redis": "^2.8.0",
+    "require-directory": "^2.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "staging": "DEBUG=AUTH_SERVER* NODE_ENV=staging node server.js",
+    "dev": "DEBUG=AUTH_SERVER* NODE_ENV=development nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
