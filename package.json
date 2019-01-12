@@ -16,6 +16,7 @@
     "lodash": "^4.17.11",
     "moment-timezone": "^0.5.23",
     "mongoose": "^5.3.14",
+    "morgan": "^1.9.1",
     "oauth2-server": "^3.0.1",
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
@@ -23,7 +24,8 @@
     "pug": "^2.0.3",
     "redis": "^2.8.0",
     "require-directory": "^2.1.1",
-    "uninstall": "0.0.0"
+    "uninstall": "0.0.0",
+    "winston": "^3.1.0"
   },
   "devDependencies": {},
   "scripts": {
