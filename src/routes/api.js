@@ -18,17 +18,7 @@ module.exports = (db) => {
 
   });
 
-  router.all('/token', (req, res, next) => {
-
-    const request = new Request(req);
-    const response = new Response(res);
-
-    OAuth.token(request, response)
-      .then(result => {
-        return res.json(result);
-      })
-      .catch(next);
-  });
+  router.all('/token', generateToken());
 
   router.post('/authenticate', authenticateHandler());
   router.get('/authorize', (req, res, next) => {

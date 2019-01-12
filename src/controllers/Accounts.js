@@ -1,7 +1,10 @@
 const ObjectId = require('mongoose').Types.ObjectId
+const debug = require('debug')('AUTH_SERVER:Register');
+const acl = require('./../lib/Acl');
 const jwt = require('jsonwebtoken');
 const redis = require('./../adapters/redis');
 const crypto = require('crypto');
+const _ = require('lodash');
 
 class AccountController {
 
@@ -12,11 +15,24 @@ class AccountController {
   async register(params) {
     try {
 
-      let account = await this.db.accounts.findOne({ identifier: [params.identifier] });
+      let account = await this.db.accounts.findOne({ identifier: [params.identifier], roles: [params.roles] });
+      let accessControl = await this.db.roles.findById(params.roles).lean();
 
-      if (account) throw { code: 400, message: 'Email Already Registered' }
+      if (account) throw { code: 400, message: 'Email Already Registered' };
 
       account = new this.db.accounts();
+      let profile = await this.db.profiles.findOne({ client: params.client._id, account: params.user._id });
+
+      if (!profile) {
+
+        profile = new this.db.profiles();
+        profile.client = params.client._id;
+        profile.account = ObjectId(account._id);
+        profile.identifier = [params.identifier];
+
+        await profile.save();
+
+      }
 
       let { hash, salt } = this.encodePassword(params.password);
 
@@ -24,11 +40,17 @@ class AccountController {
       account.client = params.client._id;
       account.password = hash;
       account.salt = salt;
+      account.roles = params.roles;
+      account.profile = profile._id;
 
-      let profile = new this.db.profiles({ account: ObjectId(account._id) });
+      accessControl.roles = accessControl._id;
+
+      acl.addUserRoles(account._id.toString(), accessControl.roles, err => {
+        if (err) debug('Failed', params.roles, 'role to user', params.identifier, 'with id', account._id);
+        debug(`Added`, params.roles, `role to user`, params.identifier, 'with id', account._id);
+      });
 
       profile = await profile.save();
-
       account = await account.save();
 
       return {
@@ -41,33 +63,14 @@ class AccountController {
     }
   }
 
-  async login(params) {
+  async doLogin(params) {
     try {
 
-      let account = await this.db.accounts.findOne({ identifier: [params.identifier] }).lean();
+      let profile = await this.db.profiles.findOne({ account: ObjectId(params.user._id) });
 
-      if (!account) throw { code: 400, message: 'Account Not Register' }
+      if (!profile) throw { statusCode: 404, code: 404, error: 'profile_not_found', message: 'profile not found' };
 
-      if (!this.validateHash(params.password, account)) throw { code: 400, message: 'Oops, Wrong Password' };
-
-      delete account.password;
-      delete account.salt;
-
-      let profile = await this.db.profiles.findOne({ account: ObjectId(account._id) }).populate(['address']);
-
-      let data = {
-        account,
-        profile
-      }
-
-      data.token = jwt.sign(data, process.env.SECRET_KEY, {
-        expiresIn: 86400,
-        algorithm: "HS256"
-      });
-
-      redis.SETEX(`AccessToken:${account._id}`, 86400, JSON.stringify(data))
-
-      return data;
+      return { data: profile };
 
     } catch (error) {
       throw error;

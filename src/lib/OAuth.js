@@ -15,15 +15,13 @@ let OAuth = new OAuthServer({
   accessTokenLifetime: 86400
 });
 
-function generateToken() {
-  let options = {}
+function generateToken(options) {
   return function(req, res, next) {
     let request = new Request(req);
     let response = new Response(res);
     return OAuth.token(request, response, options)
       .then(function(token) {
-        res.locals.oauth = {token: token};
-        next();
+        res.status(200).json(token);
       })
       .catch(function(err) {
         next(err);

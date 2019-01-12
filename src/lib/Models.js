@@ -1,6 +1,6 @@
+const OAuth2 = require('oauth2-server/lib/errors/unauthorized-client-error')
 const redis = require('./../adapters/redis');
 const moment = require('moment-timezone');
-const OAuth2 = require('oauth2-server/lib/errors/unauthorized-client-error')
 const Models = require('./../models');
 const crypto = require('crypto');
 const _ = require('lodash');
@@ -156,7 +156,7 @@ class Model {
   async revokeAuthorizationCode(authorizationCode) {
     try {
       
-      Models.authorizationCode.deleteOne({ authorizationCode: authorizationCode })
+      return Models.authorizationCode.deleteOne({ authorizationCode: authorizationCode })
         .then(code => {
           return !code;
         })
@@ -170,13 +170,12 @@ class Model {
     try {
 
       let SaveToken = async (token, client, user) => {
-
         let accessToken = new Models.accessTokens();
         accessToken.accessToken = token.accessToken;
         accessToken.accessTokenExpiresAt = token.accessTokenExpiresAt;
         accessToken.client = client._id;
         accessToken.account = user._id;
-        accessToken.scope =  [token.scope];
+        accessToken.scope =  token.scope;
         accessToken = await accessToken.save();
         return await Models.accessTokens.findById(accessToken._id).select(['-_id']).lean();
       }
@@ -187,7 +186,7 @@ class Model {
         refreshToken.refreshTokenExpiresAt = token.refreshTokenExpiresAt
         refreshToken.client = client._id;
         refreshToken.account = user._id;
-        refreshToken.scope = [token.scope];
+        refreshToken.scope = token.scope;
         refreshToken = await refreshToken.save();
         return await Models.refreshTokens.findById(refreshToken._id).select(['-_id']).lean();
       }
@@ -206,7 +205,6 @@ class Model {
           },
           token
         )
-
 
         redis.SETEX('access_token:'+token.accessToken, 86400, JSON.stringify(store));
         redis.SETEX('refresh_token:'+token.refreshToken, 86400, JSON.stringify(store));
@@ -274,9 +272,11 @@ class Model {
     return token.scope === scope
   }
 
-  validateScope(user, client) {
-    return user.scope;
-    return user.scope === client.scope;
+  validateScope(user, client, scope) {
+    if (!scope.split(/,\s*/).every(s => client.scope.indexOf(s))) {
+      return false;
+    }
+    return scope;
   }
 
   validateHash(password, param) {

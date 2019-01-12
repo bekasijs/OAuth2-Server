@@ -24,7 +24,7 @@ const ClientSchema = new Schema({
     required: true
   },
   grants: {
-    type: [String],
+    type: Array,
     required: true
   },
   scope: {

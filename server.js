@@ -21,7 +21,7 @@ app.set('views', path.join(__dirname, 'src/view'));
 app.set('view engine', 'pug');
 app.disable('x-powered-by');
 
-InitMONGODB((error, db, acl) => {
+InitMONGODB((error, db) => {
 
   if (error) throw new Error(error);
 

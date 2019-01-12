@@ -16,10 +16,13 @@ class ClientController {
       client.redirectUris = params.redirectUris;
       client.clientId = this.generateClientId();
       client.clientSecret = this.generateClientSecret();
-      client.grants = params.grants;
 
       let account = new this.db.accounts();
       let encode = this.encodePassword(params.password);
+
+      if (typeof params.grants === 'string' && params.grants.search(/,|,\s*/) > -1) {
+        client.grants = params.grants.split(/,|,\s/);
+      } else client.grants = params.grants;
 
       account.identifier = [params.identifier];
       account.password = encode.hash;

@@ -8,9 +8,18 @@ let now = {
 }
 
 const profileSchema = new Schema({
+  client: {
+    type: Schema.Types.ObjectId,
+    ref: 'clients',
+    required: true
+  },
   account: {
     type: Schema.Types.ObjectId,
     ref: 'accounts',
+    required: true
+  },
+  identifier: {
+    type: [String],
     required: true
   },
   firstname: {
