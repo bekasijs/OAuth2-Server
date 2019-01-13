@@ -1,15 +1,21 @@
 const winston = require('winston');
 const path = require('path');
 const logger = winston.createLogger({
+    format: winston.format.json(),
     levels: winston.config.syslog.levels,
     transports: [
-        new winston.transports.Console({ level: 'error', json: true, colorize: true }),
-        new winston.transports.Console({ level: 'warn', json: true, colorize: true }),
+        new winston.transports.Console(),
         new winston.transports.File({
-            filename: 'access_log.log',
+            filename: path.join(__dirname, '../lib/logs/') + 'access-log.log',
             level: 'info',
             handleExceptions: true,
-            json: true
+            json: true,
+        }),
+        new winston.transports.File({
+            filename: path.join(__dirname, '../lib/logs/') + 'error-log.log',
+            level: 'error',
+            handleExceptions: true,
+            json: true,
         })
     ],
 });
