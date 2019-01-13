@@ -23,9 +23,7 @@ function generateToken(options) {
       .then(function(token) {
         res.status(200).json(token);
       })
-      .catch(function(err) {
-        next(err);
-      });
+      .catch(next);
   }
 }
 
@@ -39,9 +37,7 @@ function authorizeHandler(options) {
         res.locals.oauth = {code: code};
         next();
       })
-      .catch(function(err) {
-        next(err);
-      });
+      .catch(next);
   }
 }
 

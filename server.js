@@ -18,8 +18,6 @@ app.use(cors());
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(morgan('dev'));
 app.use(morgan('combined', { stream: logger.stream }));
 
 app.set('views', path.join(__dirname, 'src/view'));
@@ -31,11 +29,10 @@ InitMONGODB((error, db) => {
   if (error) throw new Error(error);
 
   app.use('/oauth', api(db));
-  app.use(morgan('combined', { stream: logger.stream }));
   app.use((error, req, res, next) => {
+    logger.error(error); // Log error
     if (error) res.status(error.code ? error.code : error.statusCode ? error.statusCode : 400).json(error);
     res.status(500).send(error);
-
   });
 
   app.listen(process.env.PORT, () => {
