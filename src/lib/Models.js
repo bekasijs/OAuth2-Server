@@ -130,7 +130,7 @@ class Model {
       if (!account) throw new OAuth2('Account not registered', {
         code: 400,
         name: 'account_not_registered'
-      })
+      });
 
       if (this.validateHash(password, account)) return account;
       else throw new OAuth2('Oops, Wrong password', {
@@ -258,7 +258,7 @@ class Model {
   async revokeToken(token) {
     try {
 
-      return Models.refreshTokens.deleteOne({ refreshToken: token.refreshToken })
+      return Models.accessToken.deleteOne({ accessToken: token.accessToken })
         .then(result => {
           return !!result
         });

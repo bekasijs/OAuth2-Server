@@ -1,5 +1,15 @@
 {
+  "port": 8000,
   "mongodb": {
-    "uri": "mongodb://localhost:27017/testing"
+    "uri": "mongodb://localhost:27017/master"
+  },
+  "admin": {
+    "scope": []
+  },
+  "customer": {
+    "scope": []
+  },
+  "merchant": {
+    "scope": []
   }
 }

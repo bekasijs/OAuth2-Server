@@ -31,13 +31,20 @@ const accountSchema = new Schema({
   scope: {
     type: Array
   },
+  isVerify: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Schema.Types.Mixed,
-    default: now
   },
   updatedAt: {
     type: Schema.Types.Mixed
   }
 });
+
+accountSchema.statics.create = () => {
+  
+};
 
 module.exports = mongoose.model('accounts', accountSchema);

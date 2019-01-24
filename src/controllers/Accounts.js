@@ -1,62 +1,43 @@
 const ObjectId = require('mongoose').Types.ObjectId
-const debug = require('debug')('AUTH_SERVER:Register');
+const logger = require('./../lib/Logging');
 const acl = require('./../lib/Acl');
-const jwt = require('jsonwebtoken');
-const redis = require('./../adapters/redis');
 const crypto = require('crypto');
 const _ = require('lodash');
 
 class AccountController {
 
-  constructor(db) {
-    this.db = db;
+  constructor(client, models) {
+    this.client = client;
+    this.models = models;
   }
 
   async register(params) {
     try {
 
-      let account = await this.db.accounts.findOne({ identifier: [params.identifier], roles: [params.roles] });
-      let accessControl = await this.db.roles.findById(params.roles).lean();
+      let account = await this.models.accounts.findOne({ identifier: [params.identifier], roles: [params.roles] });
+      let accessControl = await this.models.roles.findById(params.roles).lean();
 
       if (account) throw { code: 400, message: 'Email Already Registered' };
 
-      account = new this.db.accounts();
-      let profile = await this.db.profiles.findOne({ client: params.client._id, account: params.user._id });
-
-      if (!profile) {
-
-        profile = new this.db.profiles();
-        profile.client = params.client._id;
-        profile.account = ObjectId(account._id);
-        profile.identifier = [params.identifier];
-
-        await profile.save();
-
-      }
-
       let { hash, salt } = this.encodePassword(params.password);
 
-      account.identifier = [params.identifier];
-      account.client = params.client._id;
+      account = new this.models.accounts();
+      account.identifier = params.identifier;
+      account.client = this.client._id;
       account.password = hash;
       account.salt = salt;
       account.roles = params.roles;
-      account.profile = profile._id;
 
       accessControl.roles = accessControl._id;
 
       acl.addUserRoles(account._id.toString(), accessControl.roles, err => {
-        if (err) debug('Failed', params.roles, 'role to user', params.identifier, 'with id', account._id);
-        debug(`Added`, params.roles, `role to user`, params.identifier, 'with id', account._id);
+        if (err) logger.error('Failed', params.roles, 'role to user', params.identifier, 'with id', account._id);
+        logger.info(`Added`, params.roles, `role to user`, params.identifier, 'with id', account._id);
       });
 
-      profile = await profile.save();
       account = await account.save();
 
-      return {
-        account,
-        profile
-      }
+      return { account }
 
     } catch (error) {
       throw error;

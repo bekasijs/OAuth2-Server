@@ -39,4 +39,8 @@ const ClientSchema = new Schema({
   }
 });
 
+ClientSchema.statics.create = () => {
+  
+}
+
 module.exports = mongoose.model('clients', ClientSchema);

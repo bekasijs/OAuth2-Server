@@ -1,16 +1,15 @@
 require('dotenv').config();
-const debug = require('debug')('AUTH_SERVER');
-const morgan = require('morgan');
 const logger = require('./src/lib/Logging');
-const express = require('express');
 const bodyParser = require('body-parser');
+const express = require('express');
+const morgan = require('morgan');
+const config = require('config');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
 
 const InitMONGODB = require('./src/adapters/mongodb');
-const { api} = require('./src/routes');
-const { authenticateHandler } = require('./src/lib/OAuth');
+const router = require('./src/routes');
 
 const app = express();
 
@@ -20,25 +19,34 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: logger.stream }));
 
-app.set('views', path.join(__dirname, 'src/view'));
+app.set('views', path.join(__dirname, 'src/views'));
 app.set('view engine', 'pug');
 app.disable('x-powered-by');
+
+global.appRoot = require('app-root-path').require;
 
 InitMONGODB((error, db) => {
 
   if (error) throw new Error(error);
 
-  app.use('/oauth', api(db));
-  app.use((error, req, res, next) => {
-    logger.error(error); // Log error
-    if (error) res.status(error.code ? error.code : error.statusCode ? error.statusCode : 400).json(error);
-    res.status(500).send(error);
+  app.use('/oauth', router);
+  app.use('*', (req, res, next) => {
+    let error = new Error();
+    error.statusCode = 404;
+    error.name = 'NotFound';
+    error.message = `${req.path} - Not Found`;
+    res.status(404).json(error);
   });
 
-  app.listen(process.env.PORT, () => {
-    debug(`Server running at port ${process.env.PORT}`);
+  app.use((error, req, res, next) => {
+    if (error) {
+      logger.error(error);
+      res.status(error.code ? error.code : error.statusCode ? error.statusCode : 400).json(error);
+    }
+  });
+
+  app.listen(config.get('port'), () => {
+    console.info(`Server running at port ${config.get('port')}`);
   });
 
 });
-
-module.exports = app;

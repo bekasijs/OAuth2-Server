@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const config = require('config');
-const debug = require('debug')('AUTH_SERVER:MONGODB');
 const Models = require('./../models');
 
 module.exports = (cb) => {
@@ -9,12 +8,12 @@ module.exports = (cb) => {
 
     if (error) {
 
-      debug('Failed connecting to database mongodb', error);
+      console.error('Failed connecting to database mongodb', error);
       cb(error);
 
     }
 
-    debug('Successfully connecting to database mongodb');
+    console.info('Successfully connecting to database mongodb');
      
     cb(null, Models);
 

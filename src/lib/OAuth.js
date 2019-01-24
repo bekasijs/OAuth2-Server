@@ -1,6 +1,5 @@
 const OAuthServer = require('oauth2-server');
-const Request = require('oauth2-server').Request;
-const Response = require('oauth2-server').Response;
+const {Request, Response} = require('oauth2-server');
 const Models = require('./Models');
 
 let OAuth = new OAuthServer({
