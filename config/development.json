@@ -1,28 +1,59 @@
 {
-  "port": 8000,
+  "port": 9000,
   "mongodb": {
     "uri": "mongodb://localhost:27017/master"
   },
-  "admin": {
+  "Admin": {
     "scope": ["*"]
   },
-  "customer": {
+  "Customer": {
     "scope": [
       "store:read",
-      "store:write"
+      "store:write",
+      "ambassador:read",
+      "ambassador:write",
+      "transcation:read",
+      "transaction:write",
+      "order:read",
+      "order:write",
+      "point:read",
+      "point:write"
     ]
   },
-  "employee": {
+  "Employee": {
     "Scope": [
-      "store:read"
+      "store:read",
+      "store:write",
+      "transaction:write",
+      "employee:read",
+      "employee:write",
+      "email_notification:read",
+      "email_notification:write",
+      "message_notification:read",
+      "message_notification:write",
+      "push_notification:read",
+      "push_notification:write"
     ]
   },
-  "merchant": {
+  "Merchant": {
     "scope": [
       "store:read",
       "store:write",
       "analytic:read",
-      "analytic:write"
+      "analytic:write",
+      "transaction:read",
+      "transaction:write",
+      "employee:read",
+      "employee:write",
+      "export:write",
+      "program:read",
+      "program:write",
+      "email_notification:read",
+      "email_notification:write",
+      "message_notification:read",
+      "message_notification:write",
+      "push_notification:read",
+      "push_notification:write"
     ]
   }
 }

@@ -1,17 +1,18 @@
 const passport = require('passport');
-const JWTStrategy = require('passport-jwt').Strategy;
-const ExtractJWT = require('passport-jwt').ExtractJwt;
-const redis = require('./../adapters/redis');
+const BasicStrategy = require('passport-http').BasicStrategy;
+const Client = appRoot('/src/models').clients;
 
-let opts = {};
+passport.use(new BasicStrategy(
+  (clientId, clientSecret, done) => {
+    Client.findOne({ clientId: clientId }, (err, client) => {
+      if (err) return done(err);
+      if (!client) return done(null, false);
+      if (client.clientSecret != clientSecret) return done(null, false);
+      return done(null, client);
+    });
+  }
+));
 
-opts.jwtFromRequest = ExtractJWT.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = process.env.SECRET_KEY;
-
-passport.use(new JWTStrategy(opts, (payload, done) => {
-  redis.get(`AccessToken:${JSON.stringify(payload)}`, (err, data) => {
-    if (err) return done(err, false);
-    if (!data) return done(false, false);
-    if (data) return done(false, JSON.parse(data));
-  });
-}));
+module.exports = {
+  passport
+}

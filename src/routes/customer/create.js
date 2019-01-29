@@ -1,5 +1,7 @@
+
 const Joi = require('joi');
 const Accounts = require('./../../controllers/Accounts');
+const response = appRoot('src/helpers/response');
 const models = require('./../../models');
 
 module.exports = (req, res, next) => {
@@ -14,10 +16,10 @@ module.exports = (req, res, next) => {
 
   if (result.error) throw next(result.error);
 
-  let customer = new Accounts(res.locals.oauth, models);
+  let customer = new Accounts(req.user, models);
 
-  customer.register(result.value).then(result => {
-    return res.status(201).json({ data: result });
-  }).catch(next);
+  customer.register(result.value)
+  .then(response.json(res, 201))
+  .catch(next);
 
 }

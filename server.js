@@ -9,15 +9,13 @@ const cors = require('cors');
 const path = require('path');
 
 const InitMONGODB = require('./src/adapters/mongodb');
-const router = require('./src/routes');
-
 const app = express();
 
 app.use(cors());
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(morgan('combined', { stream: logger.stream }));
+app.use(morgan('combined'));
 
 app.set('views', path.join(__dirname, 'src/views'));
 app.set('view engine', 'pug');
@@ -29,12 +27,12 @@ InitMONGODB((error, db) => {
 
   if (error) throw new Error(error);
 
-  app.use('/oauth', router);
+  app.use('/oauth', require('./src/routes'));
   app.use('*', (req, res, next) => {
     let error = new Error();
     error.statusCode = 404;
     error.name = 'NotFound';
-    error.message = `${req.path} - Not Found`;
+    error.message = `${req.baseUrl} - Not Found`;
     res.status(404).json(error);
   });
 
@@ -50,3 +48,5 @@ InitMONGODB((error, db) => {
   });
 
 });
+
+module.exports = app;

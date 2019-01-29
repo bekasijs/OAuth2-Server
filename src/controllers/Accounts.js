@@ -1,6 +1,8 @@
 const ObjectId = require('mongoose').Types.ObjectId
-const logger = require('./../lib/Logging');
-const acl = require('./../lib/Acl');
+const logger = appRoot('src/lib/Logging');
+const Error = appRoot('src/lib/Error');
+const acl = appRoot('src/lib/Acl');
+const config = require('config');
 const crypto = require('crypto');
 const _ = require('lodash');
 
@@ -17,7 +19,7 @@ class AccountController {
       let account = await this.models.accounts.findOne({ identifier: [params.identifier], roles: [params.roles] });
       let accessControl = await this.models.roles.findById(params.roles).lean();
 
-      if (account) throw { code: 400, message: 'Email Already Registered' };
+      if (account) throw Error(400, 'Email already registered', 'AlreadyRegistered');
 
       let { hash, salt } = this.encodePassword(params.password);
 
@@ -27,17 +29,20 @@ class AccountController {
       account.password = hash;
       account.salt = salt;
       account.roles = params.roles;
+      account.scope = config.get(params.roles).scope;
 
       accessControl.roles = accessControl._id;
 
       acl.addUserRoles(account._id.toString(), accessControl.roles, err => {
-        if (err) logger.error('Failed', params.roles, 'role to user', params.identifier, 'with id', account._id);
-        logger.info(`Added`, params.roles, `role to user`, params.identifier, 'with id', account._id);
+        if (err) logger.error('Failed ' + params.roles + ' role to user ' + params.identifier + ' with id ' + account._id);
+        logger.info(`Added ` + params.roles + ` role to user ` + params.identifier + ' with id ' + account._id);
       });
 
-      account = await account.save();
+      await account.save();
 
-      return { account }
+      account = await this.models.accounts.findById(account._id).select('identifier scope roles client isVerify');
+
+      return account;
 
     } catch (error) {
       throw error;

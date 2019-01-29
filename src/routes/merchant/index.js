@@ -5,5 +5,6 @@ const router = require('express').Router();
 router.post('/', require('./create'));
 router.all('/token', authentication('Merchant'), generateToken());
 router.post('/authenticate', authenticateHandler());
+// router.get('/authorize')
 
 module.exports = router;

@@ -1,6 +1,7 @@
 
 const Joi = require('joi');
 const Merchant = require('./../../controllers/Merchants');
+const response = appRoot('src/helpers/response');
 const models = require('./../../models');
 
 module.exports = (req, res, next) => {
@@ -15,10 +16,10 @@ module.exports = (req, res, next) => {
 
   if (result.error) next(result.error);
 
-  let merchant = new Merchant(res.locals.oauth, models);
+  let merchant = new Merchant(req.user, models);
 
-  merchant.create(result.value).then(result => {
-    return res.status(201).json({ data: result })
-  }).catch(next);
+  merchant.create(result.value)
+  .then(response.json(res, 201))
+  .catch(next);
 
 };

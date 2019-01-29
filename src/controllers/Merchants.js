@@ -27,7 +27,8 @@ class Merchants {
       merchant.identifier = identifier;
       merchant.password = hash;
       merchant.salt = salt;
-      merchant.roles = roles;  
+      merchant.roles = roles;
+      merchant.scope = config.get(params.roles).scope;
 
       accessControl.roles = accessControl._id;
 
@@ -36,9 +37,11 @@ class Merchants {
         console.info(`Added`, roles, `role to user`, identifier, 'with id', merchant._id);
       });
 
-      merchant =  await merchant.save();
+      await merchant.save();
 
-      return { merchant };
+      merchant = await this.models.accounts.findById(merchant._id).select('identifier scope roles client isVerify');
+
+      return merchant;
 
     } catch (error) {
       throw error;

@@ -1,15 +1,11 @@
 const OAuthServer = require('oauth2-server');
 const {Request, Response} = require('oauth2-server');
+const Joi = require('joi');
 const Models = require('./Models');
 
 let OAuth = new OAuthServer({
   model: new Models(),
   grants: ['authorization_code', 'password', 'refresh_token', 'client_credentials'],
-  authenticateHandler: {
-    handle: (rq, rs) => {
-      return rq.query;
-    }
-  },
   allowEmptyState: true,
   accessTokenLifetime: 86400
 });
@@ -28,7 +24,13 @@ function generateToken(options) {
 
 function authorizeHandler(options) {
   return function(req, res, next) {
-
+    if (req.locals.oauth) {
+      return res.redirect(`authorize?path=${req.body.path}
+          &client_id=${req.body.client_id}
+          &response_type=${req.body.response_type ? res.body.response_type : 'code'}
+          &scope${req.body.scope ? req.body.scope : 'profile:read'}`
+        );
+    }
     let request = new Request(req);
     let response = new Response(res);
     return OAuth.authorize(request, response, options)

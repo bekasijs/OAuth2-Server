@@ -1,6 +1,7 @@
 const acl = require('./../lib/Acl');
 const logger = require('./../lib/Logging');
 const Error = require('./../lib/Error');
+const config = require('config');
 const crypto = require('crypto');
 const _ = require('lodash');
 
@@ -25,7 +26,8 @@ class Admins {
       admin.identifier = identifier;
       admin.password = hash;
       admin.salt = salt;
-      admin.roles = roles;  
+      admin.roles = roles;
+      admin.scope = config.get(roles).scope;
 
       accessControl.roles = accessControl._id;
 
@@ -34,9 +36,11 @@ class Admins {
         logger.info(`Added`, roles, `role to user`, identifier, 'with id', admin._id);
       });
 
-      admin = await admin.save();
+      await admin.save();
 
-      return { admin }
+      admin = await this.models.accounts.findById(admin._id).select('identifier scope roles client isVerify');
+
+      return admin;
 
     } catch (error) {
       throw error;

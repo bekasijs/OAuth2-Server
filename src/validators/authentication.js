@@ -1,5 +1,4 @@
 const Joi = require('joi');
-const Error = appRoot('/src/lib/Error');
 
 module.exports = (roles) => {
   roles = roles || 'Users';
