@@ -1,8 +1,7 @@
 const OAuth2 = require('oauth2-server/lib/errors/unauthorized-client-error')
 const redis = require('./../adapters/redis');
-const moment = require('moment-timezone');
 const Models = require('./../models');
-const crypto = require('crypto');
+const { encrypt, decrypt } = appRoot('src/lib/password');
 const _ = require('lodash');
 
 class Model {
@@ -25,7 +24,7 @@ class Model {
     try {
 
       return Models.refreshTokens.findOne({ refreshToken: refreshToken })
-        .populate(['client', 'account'])
+        .select('-_id')
         .lean()
         .then(result => {
 
@@ -53,19 +52,15 @@ class Model {
     try {
 
       return Models.accessTokens.findOne({ accessToken: accessToken })
-        .populate(['client', 'account'])
+        .select('-_id')
         .lean()
         .then(token => {
- 
-          delete token.client.clientSecret;
-          delete token.account.password;
-          delete token.account.salt;
 
           token = Object.assign({}, token, { user: token.account });
+          token.accessTokenExpiresAt = new Date(token.accessTokenExpiresAt);
 
           delete token.account;
-
-          token.accessTokenExpiresAt = new Date(token.accessTokenExpiresAt);
+          delete token.client;
 
           return token;
         })
@@ -111,8 +106,7 @@ class Model {
       return Models.clients.findOne(query)
         .lean()
         .then(client => {
-
-          client.id = `${client._id}`;
+          client.id = String(client._id);
           return client
 
         });
@@ -125,18 +119,26 @@ class Model {
   async getUser(identifier, password) {
     try {
 
-      let account = await Models.accounts.findOne({ identifier: [identifier] });
+      let account = await Models.accounts.findOne({ identifier: [identifier] }).lean();
 
       if (!account) throw new OAuth2('Account not registered', {
         code: 400,
         name: 'account_not_registered'
       });
 
-      if (this.validateHash(password, account)) return account;
-      else throw new OAuth2('Oops, Wrong password', {
+      if (!decrypt(password, account)) throw new OAuth2('Oops, Wrong password', {
         code: 400,
         name: 'wrong_password'
       });
+
+      // if (account.isOnline) throw new OAuth2('Oops, Your account is online in another device please sign out before', {
+      //   code: 403,
+      //   name: 'Please sign out before'
+      // });
+
+      await Models.accounts.updateOne({ _id: account._id }, { $set: { isOnline: true } });
+
+      return account;
 
     } catch (error) {
       throw new OAuth2(error);
@@ -159,7 +161,7 @@ class Model {
       return Models.authorizationCode.deleteOne({ authorizationCode: authorizationCode })
         .then(code => {
           return !code;
-        })
+        });
 
     } catch (error) {
       throw new OAuth2(error);
@@ -169,13 +171,15 @@ class Model {
   async saveToken(token, client, user) {
     try {
 
+      const profile = await Models.profiles.findOne({ account: user._id });
+
       let SaveToken = async (token, client, user) => {
         let accessToken = new Models.accessTokens();
         accessToken.accessToken = token.accessToken;
         accessToken.accessTokenExpiresAt = token.accessTokenExpiresAt;
         accessToken.client = client._id;
         accessToken.account = user._id;
-        accessToken.scope =  token.scope;
+        accessToken.scope =  user.scopes;
         accessToken = await accessToken.save();
         return await Models.accessTokens.findById(accessToken._id).select(['-_id']).lean();
       }
@@ -186,35 +190,32 @@ class Model {
         refreshToken.refreshTokenExpiresAt = token.refreshTokenExpiresAt
         refreshToken.client = client._id;
         refreshToken.account = user._id;
-        refreshToken.scope = token.scope;
+        refreshToken.scope = user.scopes;
         refreshToken = await refreshToken.save();
         return await Models.refreshTokens.findById(refreshToken._id).select(['-_id']).lean();
       }
 
-      return Promise.all([
-        SaveToken(token, client, user),
-        token.refreshToken ? SaveRefToken(token, client, user) : []
-      ]).then(result => {
+      // remove
+      delete user.password;
+      delete user.salt;
+      delete client.clientId;
+      delete client.clientSecret;
+      delete token.scope;
 
-        const store = _.assign(
-          {
-            client: client,
-            user: user,
-            access_token: token.accessToken, // proxy
-            refresh_token: token.refreshToken, // proxy
-          },
-          token
-        )
+      await SaveToken(token, client, user);
 
-        redis.SETEX('access_token:'+token.accessToken, 86400, JSON.stringify(store));
-        redis.SETEX('refresh_token:'+token.refreshToken, 86400, JSON.stringify(store));
+      if (token.refreshToken) SaveRefToken(token, client, user);
 
-        return store;
+      const store = _.assign(
+        {
+          client: client._id,
+          user: user._id,
+          profile: profile
+        },
+        token
+      )
 
-      })
-      .catch(error => {
-        throw new OAuth2(error);
-      })
+      return store;
 
     } catch (error) {
       throw new OAuth2(error);
@@ -258,7 +259,7 @@ class Model {
   async revokeToken(token) {
     try {
 
-      return Models.accessToken.deleteOne({ accessToken: token.accessToken })
+      return Models.accessTokens.deleteOne({ accessToken: token.accessToken })
         .then(result => {
           return !!result
         });
@@ -273,16 +274,8 @@ class Model {
   }
 
   validateScope(user, client, scope) {
-    if (!scope.split(/,\s*/).every(s => client.scope.indexOf(s))) {
-      return false;
-    }
+    if (!_.includes(client.scopes, scope)) return false;
     return scope;
-  }
-
-  validateHash(password, param) {
-    let validate = crypto.createHmac('sha1', param.salt).update(password).digest('hex');
-    if (validate !== param.password) return false;
-    else return true;
   }
 
 }

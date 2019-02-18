@@ -2,12 +2,10 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment-timezone');
 
-let now = {
-  iso: moment().tz('Asia/Jakarta').format(),
-  timestamp: moment().tz('Asia/Jakarta').unix()
-}
-
 const ClientSchema = new Schema({
+  platform: {
+    type: String
+  },
   name: {
     type: String,
     required: true
@@ -27,12 +25,11 @@ const ClientSchema = new Schema({
     type: Array,
     required: true
   },
-  scope: {
+  scopes: {
     type: Array,
   },
   createdAt: {
     type: Schema.Types.Mixed,
-    default: now
   },
   updatedAt: {
     type: Schema.Types.Mixed

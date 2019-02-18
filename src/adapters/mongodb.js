@@ -14,8 +14,8 @@ module.exports = (cb) => {
     }
 
     console.info('Successfully connecting to database mongodb');
-     
-    cb(null, Models);
+
+    cb(null, db.models);
 
   });
 

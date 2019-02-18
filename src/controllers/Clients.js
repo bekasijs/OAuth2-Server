@@ -1,66 +1,39 @@
-const ObjectId = require('mongoose').Types.ObjectId
-const crypto = require('crypto');
 
-class ClientController {
+const config = require('config');
+const Error = appRoot('src/lib/Error').errorJson;
+const randomBytes = appRoot('src/lib/generatE_client');
 
-  constructor(db) {
+class clients {
+
+  constructor(user=false, db) {
+    this.user = user;
     this.db = db;
   }
 
-  async create (params) {
+  async create ({ name, grants, scopes=false, role }) {
     try {
 
-      let client = new this.db.clients();
+      scopes = config.get(role).scope || scopes ;
 
-      client.name = params.name;
-      client.redirectUris = params.redirectUris;
-      client.clientId = this.generateClientId();
-      client.clientSecret = this.generateClientSecret();
+      let client = new this.db.clients({ name, grants, scopes });
 
-      let account = new this.db.accounts();
-      let encode = this.encodePassword(params.password);
+      if (!this.user) throw Error(400, 'ClientNotFound', 'Client Not Found');
 
-      if (typeof params.grants === 'string' && params.grants.search(/,|,\s*/) > -1) {
-        client.grants = params.grants.split(/,|,\s/);
-      } else client.grants = params.grants;
-
-      account.identifier = [params.identifier];
-      account.password = encode.hash;
-      account.salt = encode.salt;
-      account.client = ObjectId(client._id);
+      client.platform = this.user._id;
+      client.clientSecret = await randomBytes();
+      client.clientId = await randomBytes();
 
       await client.save();
-      await account.save();
 
-      return { data: client };
+      client = await this.db.clients.findById(client._id).select(['-platform']);
+
+      return client;
 
     } catch (error) {
       throw error;
     }
   }
 
-  generateClientId () {
-    return crypto.randomBytes(32).toString('hex');
-  }
-
-  generateClientSecret () {
-    let salt = crypto.randomBytes(32).toString('hex');
-    let secret = crypto.createHmac('sha256', salt).update(process.env.SECRET_KEY).digest('hex');
-    return secret;
-  }
-
-  encodePassword(password) {
-    let salt = crypto.randomBytes(16).toString('hex');
-    let hash = crypto.createHmac('sha1', salt).update(password).digest('hex');
-    return { salt, hash };
-  };
-
-  validateHash(password, param) {
-    let validate = crypto.createHmac('sha1', param.salt).update(password).digest('hex');
-    if (validate !== param.password) return false;
-    else return true;
-  }
-
 }
 
-module.exports = ClientController;
+module.exports = clients;

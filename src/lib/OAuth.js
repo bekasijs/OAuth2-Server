@@ -1,16 +1,15 @@
 const OAuthServer = require('oauth2-server');
 const {Request, Response} = require('oauth2-server');
-const Joi = require('joi');
 const Models = require('./Models');
 
 let OAuth = new OAuthServer({
   model: new Models(),
-  grants: ['authorization_code', 'password', 'refresh_token', 'client_credentials'],
+  grants: ['client_credentials', 'refresh_token', 'authorization_code', 'password'],
   allowEmptyState: true,
   accessTokenLifetime: 86400
 });
 
-function generateToken(options) {
+const generateToken = (options => {
   return function(req, res, next) {
     let request = new Request(req);
     let response = new Response(res);
@@ -20,9 +19,9 @@ function generateToken(options) {
       })
       .catch(next);
   }
-}
+});
 
-function authorizeHandler(options) {
+const authorizeHandler = (options => {
   return function(req, res, next) {
     if (req.locals.oauth) {
       return res.redirect(`authorize?path=${req.body.path}
@@ -40,9 +39,9 @@ function authorizeHandler(options) {
       })
       .catch(next);
   }
-}
+});
 
-function authenticateHandler(options) {
+const authenticate = (options => {
   return function(req, res, next) {
     let request = new Request(req);
     let response = new Response(res);
@@ -53,11 +52,23 @@ function authenticateHandler(options) {
       })
       .catch(next);
   }
+});
+
+const checkAuth = (req, res, next) => {
+
+  if (!res.locals.oauth) {
+    res.statusCode = 403;
+    res.json({ isActive: false });
+  }
+
+  res.statusCode = 200;
+  res.json({ isActive: true, ...res.locals.oauth });
+
 }
 
 module.exports = {
-  OAuth,
   authorizeHandler,
-  authenticateHandler,
-  generateToken
+  authenticate,
+  generateToken,
+  checkAuth
 }

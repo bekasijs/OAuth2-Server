@@ -1,6 +1,5 @@
 
 const router = require('express').Router();
-const passport = appRoot('src/lib/Passport').passport;
 
 module.exports = (mongodb) => {
 

@@ -4,24 +4,28 @@
     "uri": "mongodb://localhost:27017/master"
   },
   "Admin": {
-    "scope": ["*"]
+    "scope": ["super_admin:read","super_admin:write"]
+  },
+  "Software": {
+    "scope": [
+      "*"
+    ]
   },
   "Customer": {
     "scope": [
-      "store:read",
-      "store:write",
-      "ambassador:read",
-      "ambassador:write",
+      "event_register:read",
+      "event_register:write",
       "transcation:read",
       "transaction:write",
       "order:read",
       "order:write",
       "point:read",
-      "point:write"
+      "point:write",
+      "customer_token:generate"
     ]
   },
   "Employee": {
-    "Scope": [
+    "scope": [
       "store:read",
       "store:write",
       "transaction:write",
@@ -37,6 +41,8 @@
   },
   "Merchant": {
     "scope": [
+      "event:read",
+      "event:write",
       "store:read",
       "store:write",
       "analytic:read",
@@ -53,7 +59,8 @@
       "message_notification:read",
       "message_notification:write",
       "push_notification:read",
-      "push_notification:write"
+      "push_notification:write",
+      "merchant_token:generate"
     ]
   }
 }

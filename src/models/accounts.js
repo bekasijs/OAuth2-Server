@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment-timezone');
 
-let now = {
-  iso: moment().tz('Asia/Jakarta').format(),
-  timestamp: moment().tz('Asia/Jakarta').unix()
-}
-
 const accountSchema = new Schema({
   client: {
     type: Schema.Types.ObjectId,
@@ -25,26 +20,47 @@ const accountSchema = new Schema({
     type: String,
     required: true
   },
-  roles: {
-    type: [String],
+  role: {
+    type: String,
   },
-  scope: {
+  scopes: {
     type: Array
+  },
+  type: {
+    type: String
   },
   isVerify: {
     type: Boolean,
     default: false
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  isOnline: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
-    type: Schema.Types.Mixed,
+    date: {
+      type: Date,
+      default: new Date()
+    },
+    timezone: {
+      type: String,
+      default: 'Asia/Jakarta'
+    }
   },
   updatedAt: {
-    type: Schema.Types.Mixed
+    date: {
+      type: Date
+    },
+    timezone: String
   }
 });
 
-accountSchema.statics.create = () => {
-  
-};
+accountSchema.pre('save', (done) => {
+  done();
+});
 
 module.exports = mongoose.model('accounts', accountSchema);

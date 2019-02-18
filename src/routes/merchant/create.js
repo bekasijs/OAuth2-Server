@@ -1,25 +1,22 @@
 
 const Joi = require('joi');
-const Merchant = require('./../../controllers/Merchants');
-const response = appRoot('src/helpers/response');
-const models = require('./../../models');
+const response = appRoot('src/helpers/response').json;
+const Merchant = appRoot('src/controllers/merchants');
 
-module.exports = (req, res, next) => {
+module.exports = (mongodb) => {
+  return (req, res, next) => {
+    
+    const schema = Joi.object().keys({
+      username: Joi.string().required(),
+      password: Joi.string().regex(/[a-zA-Z]/).min(8)
+    });
 
-  const schema = Joi.object().keys({
-    identifier: Joi.string().required(),
-    password: Joi.string().required(),
-    roles: Joi.string().default('Merchant')
-  });
+    let merchant = new Merchant(req.user, mongodb);
 
-  const result = Joi.validate(req.body, schema);
+    Joi.validate(req.body, schema)
+    .then(params => merchant.create(params))
+    .then(response(res, 201))
+    .catch(next);
 
-  if (result.error) next(result.error);
-
-  let merchant = new Merchant(req.user, models);
-
-  merchant.create(result.value)
-  .then(response.json(res, 201))
-  .catch(next);
-
-};
+  }
+}

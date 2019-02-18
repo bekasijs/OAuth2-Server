@@ -1,45 +1,43 @@
-const acl = require('./../lib/Acl');
-const Error = require('./../lib/Error');
-const crypto = require('crypto');
-const _ = require('lodash');
 
-class Merchants { 
+const config = require('config');
+const jwt = require('jsonwebtoken');
+const Error = appRoot('src/lib/Error').errorJson;
+const { encrypt, decrypt } = appRoot('src/lib/password');
 
-  constructor(client, models) {
-    this.client = client;
-    this.models = models;
+class merchants {
+
+  constructor(user=false, db) {
+    this.user = user;
+    this.db = db;
   }
 
-  async create ({ identifier, password, roles }) {
+  async create ({ username, password }) {
     try {
 
-      let merchant = await this.models.accounts.findOne({ identifier: [identifier], roles: [roles] });
-      if (merchant) throw Error(400, 'AccountAlreadyExist', 'this account already exist');
+      let merchant = await this.db.accounts.findOne({ identifier: [username] });
 
-      let accessControl = await this.models.roles.findById(roles).lean();
+      if (merchant) throw Error(400, 'AlreadyRegistered', 'Already Registered');
 
-      if (!accessControl) throw Error(400, 'AccessControlError', 'access control list not found for ' + roles);
+      const newMerchant = new this.db.accounts();
+      const profile = new this.db.profiles();
+      const { hash, salt } = await encrypt(password);
 
-      let { hash, salt } = this.encodePassword(password);
+      newMerchant.client = this.user._id;
+      newMerchant.identifier = username;
+      newMerchant.password = hash;
+      newMerchant.salt = salt;
+      newMerchant.role = 'Merchant';
+      newMerchant.scopes = this.user.scopes;
 
-      merchant = new this.models.accounts();
-      merchant.client = this.client._id;
-      merchant.identifier = identifier;
-      merchant.password = hash;
-      merchant.salt = salt;
-      merchant.roles = roles;
-      merchant.scope = config.get(params.roles).scope;
+      profile.account = newMerchant._id;
+      profile.email = username;
+      profile.createdAt = { date: new Date, timezone: 'Asia/Jakarta' }
+      profile.updatedAt = { date: new Date, timezone: 'Asia/Jakarta' }
 
-      accessControl.roles = accessControl._id;
+      await newMerchant.save();
+      await profile.save();
 
-      acl.addUserRoles(merchant._id.toString(), accessControl.roles, err => {
-        if (err) console.error('Failed', roles, 'role to user', identifier, 'with id', merchant._id);
-        console.info(`Added`, roles, `role to user`, identifier, 'with id', merchant._id);
-      });
-
-      await merchant.save();
-
-      merchant = await this.models.accounts.findById(merchant._id).select('identifier scope roles client isVerify');
+      merchant = await this.db.accounts.findById(newMerchant._id).select('-password -salt');
 
       return merchant;
 
@@ -48,18 +46,6 @@ class Merchants {
     }
   }
 
-  encodePassword(password) {
-    let salt = crypto.randomBytes(16).toString('hex');
-    let hash = crypto.createHmac('sha1', salt).update(password).digest('hex');
-    return { salt, hash };
-  };
-
-  validateHash(password, param) {
-    let validate = crypto.createHmac('sha1', param.salt).update(password).digest('hex');
-    if (validate !== param.password) return false;
-    else return true;
-  }
-
 }
 
-module.exports = Merchants;
+module.exports = merchants;

@@ -2,25 +2,18 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const moment = require('moment-timezone');
 
-let now = {
-  iso: moment().tz('Asia/Jakarta').format(),
-  timestamp: moment().tz('Asia/Jakarta').unix()
-}
-
 const profileSchema = new Schema({
-  client: {
-    type: Schema.Types.ObjectId,
-    ref: 'clients',
-    required: true
-  },
   account: {
     type: Schema.Types.ObjectId,
     ref: 'accounts',
     required: true
   },
-  identifier: {
-    type: [String],
+  email: {
+    type: String,
     required: true
+  },
+  msisdn: {
+    type: String,
   },
   firstname: {
     type: String
@@ -46,13 +39,27 @@ const profileSchema = new Schema({
   profession: {
     type: String
   },
+  settings: {
+    type: Schema.Types.Mixed
+  },
   createdAt: {
-    type: Schema.Types.Mixed,
-    default: now
+    date: {
+      type: Date
+    },
+    timezone: {
+      type: String
+    }
   },
   updatedAt: {
-    type: Schema.Types.Mixed
+    date: {
+      type: Date
+    },
+    timezone: {
+      type: String
+    }
   }
-});
+}, { strict: true });
+
+profileSchema.set({ iAmNotInTheSchema: true });
 
 module.exports = mongoose.model('profiles', profileSchema);
